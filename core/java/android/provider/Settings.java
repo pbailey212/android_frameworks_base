@@ -3351,6 +3351,13 @@ public final class Settings {
         public static final String QS_DYNAMIC_WIFI = "qs_dyanmic_wifi";
 
         /**
+         * Quick Settings Panel Dynamic Tiles
+         *
+         * @hide
+         */
+        public static final String QS_EQUALIZER = "qs_dynamic_equalizer";
+
+        /**
          * Quick Settings Quick Pulldown
          *
          * @hide
@@ -3386,31 +3393,6 @@ public final class Settings {
         public static final String QUICK_SETTINGS_TILES_VIBRATE = "quick_settings_tiles_vibrate";
 
         /**
-         * Custom Ring Mode
-         * @hide
-         */
-        public static final String EXPANDED_RING_MODE = "expanded_ring_mode";        
-
-        /**
-         * Custom Network Mode
-         * @hide
-         */
-        public static final String EXPANDED_NETWORK_MODE = "expanded_network_mode";
-
-        /**
-         * Notification Power Widget - Custom Screen Timeout
-         * @hide
-         */
-        public static final String EXPANDED_SCREENTIMEOUT_MODE = "expanded_screentimeout_mode";
-
-	/**
-         * Use the Notification Power Widget? (Who wouldn't!)
-         *
-         * @hide
-         */
-        public static final String EXPANDED_VIEW_WIDGET = "expanded_view_widget";
-
-	/**
          * Quick Settings Quick access ribbon
          *
          * @hide
@@ -3430,6 +3412,37 @@ public final class Settings {
          * @hide
          */
         public static final String QUICK_SETTINGS_RIBBON_TILES = "quick_settings_ribbon_tiles";
+
+        /**
+         * Custom Ring Mode
+         * @hide
+         */
+        public static final String EXPANDED_RING_MODE = "expanded_ring_mode";        
+
+        /**
+         * Custom Network Mode
+         * @hide
+         */
+        public static final String EXPANDED_NETWORK_MODE = "expanded_network_mode";
+
+        /**
+         * Notification Power Widget - Custom Screen Timeout
+         * @hide
+         */
+        public static final String EXPANDED_SCREENTIMEOUT_MODE = "expanded_screentimeout_mode";
+
+        /**
+         * Use the Notification Power Widget? (Who wouldn't!)
+         *
+         * @hide
+         */
+        public static final String EXPANDED_VIEW_WIDGET = "expanded_view_widget";
+
+        /**
+         * Hide network labels in the notification drawer
+         * @hide
+         */
+        public static final String NOTIFICATION_HIDE_LABELS = "notification_hide_labels";
 
         /**
          * Reminder alert on / off
@@ -3458,12 +3471,6 @@ public final class Settings {
          */
         public static final String REMINDER_ALERT_INTERVAL = "reminder_alert_interval";
 
-	/**
-         * Hide network labels in the notification drawer
-         * @hide
-         */
-        public static final String NOTIFICATION_HIDE_LABELS = "notification_hide_labels";
-
         /**
           * Stores values for notification shortcut targets
           * @hide
@@ -3488,7 +3495,7 @@ public final class Settings {
          */
         public static final String QUIET_HOURS_FORCED = "quiet_hours_forced";
 
-	/**
+        /**
          * Whether to enable quiet hours.
          * @hide
          */
@@ -3512,7 +3519,7 @@ public final class Settings {
          */
         public static final String QUIET_HOURS_END = "quiet_hours_end";
 
-	/**
+        /**
          * Whether to remove the sound from phone ringing during quiet hours.
          * @hide
          */

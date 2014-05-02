@@ -28,12 +28,15 @@ import static com.android.internal.util.mahdi.QSConstants.TILE_CONTACT;
 import static com.android.internal.util.mahdi.QSConstants.TILE_CUSTOM;
 import static com.android.internal.util.mahdi.QSConstants.TILE_CUSTOM_KEY;
 import static com.android.internal.util.mahdi.QSConstants.TILE_DELIMITER;
+import static com.android.internal.util.mahdi.QSConstants.TILE_EQUALIZER;
 import static com.android.internal.util.mahdi.QSConstants.TILE_IMMERSIVEMODE;
 import static com.android.internal.util.mahdi.QSConstants.TILE_LOCATION;
 import static com.android.internal.util.mahdi.QSConstants.TILE_LOCKSCREEN;
 import static com.android.internal.util.mahdi.QSConstants.TILE_LTE;
 import static com.android.internal.util.mahdi.QSConstants.TILE_MOBILEDATA;
 import static com.android.internal.util.mahdi.QSConstants.TILE_MUSIC;
+import static com.android.internal.util.mahdi.QSConstants.TILE_NAVBAR;
+import static com.android.internal.util.mahdi.QSConstants.TILE_NETWORKTRAFFIC;
 import static com.android.internal.util.mahdi.QSConstants.TILE_NETWORKADB;
 import static com.android.internal.util.mahdi.QSConstants.TILE_NETWORKMODE;
 import static com.android.internal.util.mahdi.QSConstants.TILE_NFC;
@@ -53,8 +56,6 @@ import static com.android.internal.util.mahdi.QSConstants.TILE_VOLUME;
 import static com.android.internal.util.mahdi.QSConstants.TILE_WIFI;
 import static com.android.internal.util.mahdi.QSConstants.TILE_WIFIAP;
 import static com.android.internal.util.mahdi.QSConstants.TILE_WIMAX;
-import static com.android.internal.util.mahdi.QSConstants.TILE_NAVBAR;
-import static com.android.internal.util.mahdi.QSConstants.TILE_NETWORKTRAFFIC;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -84,6 +85,7 @@ import com.android.systemui.quicksettings.BugReportTile;
 import com.android.systemui.quicksettings.CameraTile;
 import com.android.systemui.quicksettings.ContactTile;
 import com.android.systemui.quicksettings.CustomTile;
+import com.android.systemui.quicksettings.EqualizerTile;
 import com.android.systemui.quicksettings.ImmersiveModeTile;
 import com.android.systemui.quicksettings.InputMethodTile;
 import com.android.systemui.quicksettings.LocationTile;
@@ -349,6 +351,12 @@ public class QuickSettingsController {
             qs.setupQuickSettingsTile(inflater, mContainerView);
             mQuickSettingsTiles.add(qs);
         }
+        if (Settings.System.getIntForUser(resolver,
+                Settings.System.QS_EQUALIZER, 1, UserHandle.USER_CURRENT) == 1) {
+            QuickSettingsTile qs = new EqualizerTile(mContext, this);
+            qs.setupQuickSettingsTile(inflater, mContainerView);
+            mQuickSettingsTiles.add(qs);
+        }
     }
 
     private String findCustomKey (String tile) {
@@ -485,6 +493,18 @@ public class QuickSettingsController {
         mContainerView.updateResources();
         for (QuickSettingsTile t : mQuickSettingsTiles) {
             t.updateResources();
+        }
+    }
+
+    public void onSettingsHidden() {
+        for (QuickSettingsTile t : mQuickSettingsTiles) {
+            t.onSettingsHidden();
+        }
+    }
+
+    public void onSettingsVisible() {
+        for (QuickSettingsTile t : mQuickSettingsTiles) {
+            t.onSettingsVisible();
         }
     }
 }

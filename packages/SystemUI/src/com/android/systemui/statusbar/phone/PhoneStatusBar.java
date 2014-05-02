@@ -1233,6 +1233,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                 }
 
                 if (mSettingsPanel != null) {
+                    mSettingsPanel.setStatusBar(this);
                     if (!ActivityManager.isHighEndGfx()) {
                         mSettingsPanel.setBackground(new FastColorDrawable(context.getResources().getColor(
                                 R.color.notification_panel_solid_background)));
@@ -1385,6 +1386,14 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         } else {
             mStatusHeaderImage.setImageDrawable(dw);
         }
+    }
+
+    protected void onQuickSettingsHidden() {
+        mQS.onSettingsHidden();
+    }
+
+    protected void onQuickSettingsVisible() {
+        mQS.onSettingsVisible();
     }
 
     @Override
