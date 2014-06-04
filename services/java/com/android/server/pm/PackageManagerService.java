@@ -5595,10 +5595,6 @@ public class PackageManagerService extends IPackageManager.Stub {
                 }
             }
 
-            if (map.isEmpty()) {
-                mOverlays.remove(target);
-            }
-
             PackageParser.Package targetPkg = mPackages.get(target);
             if (targetPkg != null) {
                 String idmapPath = getIdmapPath(targetPkg, opkg);
