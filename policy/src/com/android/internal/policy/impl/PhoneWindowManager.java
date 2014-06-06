@@ -127,6 +127,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.lang.reflect.Constructor;
+import java.util.HashSet;
 
 import static android.view.WindowManager.LayoutParams.*;
 import static android.view.WindowManagerPolicy.WindowManagerFuncs.LID_ABSENT;
@@ -417,6 +418,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final Rect mTmpNavigationFrame = new Rect();
 
     WindowState mTopFullscreenOpaqueWindowState;
+    HashSet<IApplicationToken> mAppsToBeHidden = new HashSet<IApplicationToken>();
     boolean mTopIsFullscreen;
     boolean mForceStatusBar;
     boolean mForceStatusBarFromKeyguard;
@@ -3386,8 +3388,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     @Override
     public void getContentInsetHintLw(WindowManager.LayoutParams attrs, Rect contentInset) {
-        final int fl = updateWindowManagerVisibilityFlagsForGlobalImmersiveMode(attrs);
-        final int systemUiVisibility = updateSystemUiVisibilityFlagsForGlobalImmersiveMode(
+        final int fl = updateWindowManagerVisibilityFlagsForExpandedDesktop(attrs);
+        final int systemUiVisibility = updateSystemUiVisibilityFlagsForExpandedDesktop(
                 attrs.systemUiVisibility|attrs.subtreeSystemUiVisibility);
 
         if ((fl & (FLAG_LAYOUT_IN_SCREEN | FLAG_LAYOUT_INSET_DECOR))
@@ -3811,7 +3813,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private void applyStableConstraints(int sysui, WindowManager.LayoutParams attrs, Rect r) {
-        final int fl = updateWindowManagerVisibilityFlagsForGlobalImmersiveMode(attrs);
+        final int fl = updateWindowManagerVisibilityFlagsForExpandedDesktop(attrs);
         if ((sysui & View.SYSTEM_UI_FLAG_LAYOUT_STABLE) != 0) {
             // If app is requesting a stable layout, don't let the
             // content insets go below the stable values.
@@ -3847,7 +3849,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         final int fl = attrs.flags;
         final int sim = attrs.softInputMode;
-        final int sysUiFl = updateSystemUiVisibilityFlagsForGlobalImmersiveMode(win.getSystemUiVisibility());
+        final int sysUiFl = updateSystemUiVisibilityFlagsForExpandedDesktop(win.getSystemUiVisibility());
 
 
         final Rect pf = mTmpParentFrame;
@@ -4166,8 +4168,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             + mRestrictedScreenWidth;
                     pf.bottom = df.bottom = of.bottom = cf.bottom = mRestrictedScreenTop
                             + mRestrictedScreenHeight;
-                } else if (attrs.type == TYPE_TOAST || attrs.type == TYPE_SYSTEM_ALERT) {
-                    // Toasts are stable to interim decor changes.
+                } else if (attrs.type == TYPE_TOAST || attrs.type == TYPE_SYSTEM_ALERT
+                        || attrs.type == TYPE_VOLUME_OVERLAY) {
+                    // These dialogs are stable to interim decor changes.
                     pf.left = df.left = of.left = cf.left = mStableLeft;
                     pf.top = df.top = of.top = cf.top = mStableTop;
                     pf.right = df.right = of.right = cf.right = mStableRight;
@@ -4227,12 +4230,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
     }
 
-    private int updateSystemUiVisibilityFlagsForGlobalImmersiveMode(int vis) {
+    private int updateSystemUiVisibilityFlagsForExpandedDesktop(int vis) {
         if (immersiveModeHidesNavigationBar()) {
+            if ((vis & View.SYSTEM_UI_FLAG_SHOW_NAVIGATION_IN_EXPANDED_DESKTOP) == 0) {
                 vis |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
                 vis &= ~View.STATUS_BAR_TRANSLUCENT;
+            }
         }
-
         if (immersiveModeHidesStatusBar()) {
             vis |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN;
             vis &= ~View.NAVIGATION_BAR_TRANSLUCENT;
@@ -4240,7 +4244,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         return vis;
     }
 
-    private int updateWindowManagerVisibilityFlagsForGlobalImmersiveMode(WindowManager.LayoutParams lp) {
+    private int updateWindowManagerVisibilityFlagsForExpandedDesktop(WindowManager.LayoutParams lp) {
         if (mGlobalImmersiveModeStyle == 0) {
             return lp.flags;
         }
@@ -4257,7 +4261,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private boolean immersiveModeHidesStatusBar() {
         return mGlobalImmersiveModeStyle == 2;
     }
-
 
     private void offsetInputMethodWindowLw(WindowState win) {
         int top = win.getContentFrameLw().top;
@@ -4285,6 +4288,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     @Override
     public void beginPostLayoutPolicyLw(int displayWidth, int displayHeight) {
         mTopFullscreenOpaqueWindowState = null;
+        mAppsToBeHidden.clear();
         mForceStatusBar = false;
         mForceStatusBarFromKeyguard = false;
         mForcingShowNavBar = false;
@@ -4303,14 +4307,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                                 WindowManager.LayoutParams attrs) {
         if (DEBUG_LAYOUT) Slog.i(TAG, "Win " + win + ": isVisibleOrBehindKeyguardLw="
                 + win.isVisibleOrBehindKeyguardLw());
-        final int flags = updateWindowManagerVisibilityFlagsForGlobalImmersiveMode(attrs);
-        if (mTopFullscreenOpaqueWindowState == null && (win.getAttrs().privateFlags
-                &WindowManager.LayoutParams.PRIVATE_FLAG_FORCE_SHOW_NAV_BAR) != 0
-                || (win.isVisibleLw() && attrs.type == TYPE_INPUT_METHOD)) {
-            if (mForcingShowNavBarLayer < 0) {
-                mForcingShowNavBar = true;
-                mForcingShowNavBarLayer = win.getSurfaceLayer();
-            }
+        final int flags = updateWindowManagerVisibilityFlagsForExpandedDesktop(attrs);
+        if (mTopFullscreenOpaqueWindowState == null
+                && win.isVisibleLw() && attrs.type == TYPE_INPUT_METHOD) {
+            mForcingShowNavBar = true;
+            mForcingShowNavBarLayer = win.getSurfaceLayer();
         }
         if (mTopFullscreenOpaqueWindowState == null &&
                 win.isVisibleOrBehindKeyguardLw() && !win.isGoneForLayoutLw()) {
@@ -4324,7 +4325,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             if (attrs.type == TYPE_KEYGUARD) {
                 mShowingLockscreen = true;
             }
-            boolean applyWindow = attrs.type >= FIRST_APPLICATION_WINDOW
+            boolean appWindow = attrs.type >= FIRST_APPLICATION_WINDOW
                     && attrs.type <= LAST_APPLICATION_WINDOW;
             if (attrs.type == TYPE_DREAM) {
                 // If the lockscreen was showing when the dream started then wait
@@ -4332,30 +4333,41 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 if (!mDreamingLockscreen
                         || (win.isVisibleLw() && win.hasDrawnLw())) {
                     mShowingDream = true;
-                    applyWindow = true;
+                    appWindow = true;
                 }
             }
-            if (applyWindow
-                    && attrs.x == 0 && attrs.y == 0
-                    && attrs.width == WindowManager.LayoutParams.MATCH_PARENT
-                    && attrs.height == WindowManager.LayoutParams.MATCH_PARENT) {
-                if (DEBUG_LAYOUT) Slog.v(TAG, "Fullscreen window: " + win);
-                mTopFullscreenOpaqueWindowState = win;
-                if ((flags & FLAG_SHOW_WHEN_LOCKED) != 0) {
-                    if (DEBUG_LAYOUT) Slog.v(TAG, "Setting mHideLockScreen to true by win " + win);
-                    mHideLockScreen = true;
-                    mForceStatusBarFromKeyguard = false;
+
+            final boolean showWhenLocked = (flags & FLAG_SHOW_WHEN_LOCKED) != 0;
+            final boolean dismissKeyguard = (flags & FLAG_DISMISS_KEYGUARD) != 0;
+            if (appWindow) {
+                if (showWhenLocked || (dismissKeyguard && !isKeyguardSecure())) {
+                    mAppsToBeHidden.remove(win.getAppToken());
+                } else {
+                    mAppsToBeHidden.add(win.getAppToken());
                 }
-                if ((flags & FLAG_DISMISS_KEYGUARD) != 0
-                        && mDismissKeyguard == DISMISS_KEYGUARD_NONE) {
-                    if (DEBUG_LAYOUT) Slog.v(TAG, "Setting mDismissKeyguard true by win " + win);
-                    mDismissKeyguard = mWinDismissingKeyguard == win ?
-                            DISMISS_KEYGUARD_CONTINUE : DISMISS_KEYGUARD_START;
-                    mWinDismissingKeyguard = win;
-                    mForceStatusBarFromKeyguard = mShowingLockscreen && isKeyguardSecure();
-                }
-                if ((flags & FLAG_ALLOW_LOCK_WHILE_SCREEN_ON) != 0) {
-                    mAllowLockscreenWhenOn = true;
+                if (attrs.x == 0 && attrs.y == 0
+                        && attrs.width == WindowManager.LayoutParams.MATCH_PARENT
+                        && attrs.height == WindowManager.LayoutParams.MATCH_PARENT) {
+                    if (DEBUG_LAYOUT) Slog.v(TAG, "Fullscreen window: " + win);
+                    mTopFullscreenOpaqueWindowState = win;
+                    if (mAppsToBeHidden.isEmpty()) {
+                        if (showWhenLocked) {
+                            if (DEBUG_LAYOUT) Slog.v(TAG,
+                                    "Setting mHideLockScreen to true by win " + win);
+                            mHideLockScreen = true;
+                            mForceStatusBarFromKeyguard = false;
+                        }
+                        if (dismissKeyguard && mDismissKeyguard == DISMISS_KEYGUARD_NONE) {
+                            if (DEBUG_LAYOUT) Slog.v(TAG, "Setting mDismissKeyguard true by win " + win);
+                            mDismissKeyguard = mWinDismissingKeyguard == win ?
+                                    DISMISS_KEYGUARD_CONTINUE : DISMISS_KEYGUARD_START;
+                            mWinDismissingKeyguard = win;
+                            mForceStatusBarFromKeyguard = mShowingLockscreen && isKeyguardSecure();
+                        }
+                    }
+                    if ((flags & FLAG_ALLOW_LOCK_WHILE_SCREEN_ON) != 0) {
+                        mAllowLockscreenWhenOn = true;
+                    }
                 }
             }
         }
@@ -4441,7 +4453,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (mKeyguard != null) {
             if (localLOGV) Slog.v(TAG, "finishPostLayoutPolicyLw: mHideKeyguard="
                     + mHideLockScreen);
-            if (mDismissKeyguard != DISMISS_KEYGUARD_NONE && !mKeyguardDelegate.isSecure()) {
+            if (mDismissKeyguard != DISMISS_KEYGUARD_NONE && !isKeyguardSecure()) {
                 if (mKeyguard.hideLw(true)) {
                     changes |= FINISH_LAYOUT_REDO_LAYOUT
                             | FINISH_LAYOUT_REDO_CONFIG
@@ -6197,7 +6209,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         int tmpVisibility = win.getSystemUiVisibility()
                 & ~mResettingSystemUiFlags
                 & ~mForceClearedSystemUiFlags;
-        tmpVisibility = updateSystemUiVisibilityFlagsForGlobalImmersiveMode(tmpVisibility);
+        tmpVisibility = updateSystemUiVisibilityFlagsForExpandedDesktop(tmpVisibility);
 
         final boolean subWindowInExpandedMode = immersiveModeHidesNavigationBar()
                 && (windowType >= WindowManager.LayoutParams.FIRST_SUB_WINDOW
